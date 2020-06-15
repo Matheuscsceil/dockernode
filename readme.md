@@ -1,3 +1,3 @@
 ## Description
 
-Configurações docker para rodar aplicações nodejs
+Configurações docker para rodar aplicações nodejs.
