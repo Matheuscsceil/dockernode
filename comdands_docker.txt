@@ -1,0 +1,151 @@
+https://woliveiras.com.br/posts/comandos-mais-utilizados-no-docker/
+
+docker version
+docker pull hello-world
+docker run hello-world
+docker ps
+docker ps -a
+
+docker run ubuntu echo "olá mundo"
+docker run -it ubuntu{:version} (inicia com o terminal iterativo)
+docker start {NAME|ID}
+docker start -a -i {NAME|ID} (iniciar com o terminal iterativo)
+docker stop -t 0 {NAME|ID} (para e esperar 0 segundos)
+
+docker rm {NAME|ID}
+docker container prune (limpa todos os containers parados)
+docker images
+docker rmi {NAME|ID}
+
+DOCKER RUN
+
+docker run dockersamples/static-site
+docker run -d dockersamples/static-site (não ficar executando no terminal)
+docker run -d -P dockersamples/static-site (docker cria uma porta para a maquina)
+docker run -d -P --name meu-site dockersamples/static-site
+docker run -d -p 8080:80 -e AUTHOR="Matheus" dockersamples/static-site (variável de ambiente)
+docker ps -q (retorna só os id)
+docker stop -t 0 $(docker ps -q) (para para todos os id encontrados)
+
+VOLUMES
+
+docker run -v "/var/www" ubuntu
+docker inspect {NAME|ID}
+docker run -it -v "C:\User\Matheus\Desktop:/var/www" ubuntu
+docker run -p 8080:3000 -v "C:\User\Matheus\Deskto\projetonode:/var/www" -w "/var/www" node npm start
+docker run -d -p 8080:3000 -v "$(pwd):/var/www" -w "/var/www" node npm start
+
+DOCKERFILE
+
+node.dockerfile ou Dockerfile
+FROM node:latest
+MAINTAINER Matheus Costa
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY . /var/www
+WORKDIR /var/www
+RUN npm install
+ENTRYPOINT npm start (quando container iniciar)
+EXPOSE $PORT
+
+docker build -f node.dockerfile -t matheusceil/node .
+docker images
+docker rm -f {NAME|ID} (remove container e força a parada dele)
+docker run -d -p 8080:3000 matheusceil/node
+
+docker login
+docker push matheusceil/node
+
+REDES DOCKER
+
+docker network create --driver bridge minha-rede
+docker network ls
+docker run -it --name meu-ubuntu --network minha-rede ubuntu
+
+docker run -d --name meu-mongo --network minha-rede mongo
+docker run -d -p 8080:3000 --network minha-rede mongo douglasq/alura-books:cap05
+
+DOCKER COMPOSE
+
+docker run -d --name meu-mongo --network rede-producao mongo
+docker run -d -p 3000:3000 --name alura-books --network rede-producao douglasq/alura-books
+
+docker-compose.yml
+
+version: '3'
+services:
+ nginx:
+  buid:
+   dockerfile: ./docker/nginx.dockerfile
+   context: .
+  image: douglasq/nginx
+  container_name: nginx
+  ports:
+   - "80:80"
+  networks:
+   - production-network
+  depends_on:
+   - "node1"
+   - "node2"
+   - "node3"
+
+ mongodb:
+  image: mongo
+  networks:
+   - production-network
+
+ node1:
+  build:
+   dockerfile: ./docker/alura-books.dockerfile
+   context: .
+  image: douglasq/alura-books
+  container_name: alura-books-1
+  ports:
+   - "3000"
+  networks:
+   - production-network
+  depends_on:
+   - "mongodb"
+
+ node2:
+  build:
+   dockerfile: ./docker/alura-books.dockerfile
+   context: .
+  image: douglasq/alura-books
+  container_name: alura-books-2
+  ports:
+   - "3000"
+  networks:
+   - production-network
+  depends_on:
+   - "mongodb"
+
+ node3:
+  build:
+   dockerfile: ./docker/alura-books.dockerfile
+   context: .
+  image: douglasq/alura-books
+  container_name: alura-books-3
+  ports:
+   - "3000"
+  networks:
+   - production-network
+  depends_on:
+   - "mongodb"
+
+networks:
+ production-network
+  driver: bridge
+
+
+
+docker-compose build (executar no local do docker-compose.yml)
+docker images
+docker-compose up
+docker-compose up -d
+docker-compose ps
+docker-compose down
+docker ps -a
+
+docker exec -it alura-books-1 ping alura-books-2
+docker exec -it alura-books-1 ping node2
